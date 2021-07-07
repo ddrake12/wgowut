@@ -18,9 +18,12 @@ Create a struct in your application's GUI code that imports an anonymous *wgowut
 struct. Your struct should also be used to store components needed for inputs etc. Prefer tables over
 panels as it makes the code more readable and easy to understand. For the same reason, add high level
 components to window or top level table/panel in order and at the same time. Example code:
- import "github.com/ddrake12/wgowut"
+ import (
+	"github.com/ddrake12/wgowut"
+	"github.com/icza/gowut/gwu"
+ )
 
- struct guiControl {
+ type guiControl struct {
 	importantTb gwu.TextBox
 	importantLb gwu.ListBox
 	*wgowut.GuiBuilder
