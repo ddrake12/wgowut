@@ -81,6 +81,7 @@ const (
 	FullHeight = "Full" // Use in Options.Height to set full height
 )
 
+// Enable is used to set the Enable Option for gwu components that support it
 type Enable int
 
 const (
@@ -89,6 +90,7 @@ const (
 	EnableFalse
 )
 
+// Layout is used to set the Layout Option for gwu components that support it
 type Layout int
 
 const (
@@ -238,10 +240,11 @@ func (g *GuiBuilder) MakeListBox(values []string, options Options) gwu.ListBox {
 	return lb
 }
 
-// MakeTextBox creates a text box with the given text and uses the following options:
+// MakeTextBox creates a text box with the given text.
+// Note that the WhiteSpace option is only enforced if Enable is set to false or if ReadOnly is set to True.
+// The following options are used:
 //
 // Rows, Cols, WhiteSpace BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, Enable, ReadOnly.
-// Note that the WhiteSpace option is only enforced if Enable is set to false or if ReadOnly is set to True.
 func (g *GuiBuilder) MakeTextBox(text string, options Options) gwu.TextBox {
 	tb := gwu.NewTextBox(text)
 	if options.Rows != 0 {
