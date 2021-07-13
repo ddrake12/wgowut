@@ -213,6 +213,7 @@ func setLayout(pView gwu.PanelView, layout Layout) {
 // FormatTableCell formats the given, table, row, and column and uses the following options:
 //
 // CellPadding, HAlign, VAlign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, ColSpan, RowSpan
+
 func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Options) {
 
 	padding := strconv.Itoa(options.CellPadding)
@@ -251,6 +252,8 @@ func (g *GuiBuilder) MakeListBox(values []string, options Options) gwu.ListBox {
 	}
 
 	setEnabled(lb, options.Enable)
+
+	setStyle(lb.Style(), options)
 
 	setStyle(lb.Style(), options)
 
@@ -310,6 +313,7 @@ func (g *GuiBuilder) MakeWindow(name, extension string, options Options) gwu.Win
 	win := gwu.NewWindow(name, extension)
 
 	setTableView(win, options)
+
 	setStyle(win.Style(), options)
 
 	return win

@@ -3,7 +3,7 @@ Wgowut (wrapped gowut) provides convenient wrapper functions around the package 
 
 Initialize GUI components in one line by calling a make function and passing in a wgowut.Options struct with any needed options. 
 
-Unspecified options will be left at the default setting for the gwu component. New options can/should be added but care should be taken to recognize the zero value of the option type and the gwu default, so that options can be omitted and normal behavior occurs and updates don't break existing GUIs (since defaults are respected). For examples, see the MakeTable() CellPadding and HAlign option implementations.
+Unspecified options will be left at the default setting for the gwu component. New options can/should be added but care should be taken to recognize the zero value of the option type and the gwu default, so that options can be omitted and normal behavior occurs and updates don't break existing GUIs (since defaults are respected). For examples, see the MakeTable() CellPadding and HAlign and the MakeListBox() Enable option implementations.
 
 ## Disclaimer
  
