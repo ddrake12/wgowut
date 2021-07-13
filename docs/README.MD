@@ -1,4 +1,7 @@
+[![Go Reference](https://pkg.go.dev/badge/github.com/ddrake12/wgowut.svg)](https://pkg.go.dev/github.com/ddrake12/wgowut) ![Build Status](https://github.com/ddrake12/wgowut/actions/workflows/go.yml/badge.svg) [![Go Report Card](https://goreportcard.com/badge/github.com/ddrake12/wgowut)](https://goreportcard.com/report/github.com/ddrake12/wgowut)
+
 # Introduction 
+
 Wgowut (wrapped gowut) provides convenient wrapper functions around the package [gowut](github.com/icza/gowut). 
 
 Initialize GUI components in one line by calling a make function and passing in a wgowut.Options struct with any needed options. 
