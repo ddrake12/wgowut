@@ -76,15 +76,18 @@ import (
 )
 
 const (
-	FullWidth  = "Full" // Use in Options.Width to set full width
-	FullHeight = "Full" // Use in Options.Height to set full height
+	// FullWidth is used in Options.Width to set full width
+	FullWidth = "Full"
+	// FullHeight is used in Options.Height to set full height
+	FullHeight = "Full"
 )
 
 // Enable is used to set the Enable Option for gwu components that support it
 type Enable int
 
+// Enable option constants
 const (
-	EnableNil Enable = iota // Enable is used to set the Enable Option for gwu components that support it
+	enableNil Enable = iota
 	EnableTrue
 	EnableFalse
 )
@@ -92,8 +95,9 @@ const (
 // Layout is used to set the Layout Option for gwu components that support it
 type Layout int
 
+// Layout option constants
 const (
-	LayoutNil Layout = iota // Layout is used to set the Layout Option for gwu components that support it
+	layoutNil Layout = iota
 	LayoutNatural
 	LayoutHorizontal
 	LayoutVertical
