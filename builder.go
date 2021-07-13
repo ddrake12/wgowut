@@ -5,7 +5,7 @@ struct with any needed options. Unspecified options will be left at the default 
 component. New options can/should be added but care should be taken to recognize the zero value of
 the option type and the gwu default, so that options can be omitted and normal behavior occurs
 and updates don't break existing GUIs (since defaults are respected). For examples,
-see the MakeTable() CellPadding and HAlign option implementations.
+see the MakeTable() CellPadding and HAlign as well as the MakeListBox() Enable option implementations.
 
 Disclaimer
 
@@ -69,12 +69,33 @@ components to window or top level table/panel in order and at the same time. Exa
 package wgowut
 
 import (
-	"fmt"
-	"os"
 	"strconv"
-	"strings"
 
 	"github.com/icza/gowut/gwu"
+)
+
+const (
+	FullWidth  = "Full" // Use in Options.Width to set full width
+	FullHeight = "Full" // Use in Options.Height to set full height
+)
+
+// Enable is used to set the Enable Option for gwu components that support it
+type Enable int
+
+const (
+	EnableNil Enable = iota
+	EnableTrue
+	EnableFalse
+)
+
+// Layout is used to set the Layout Option for gwu components that support it
+type Layout int
+
+const (
+	LayoutNil Layout = iota
+	LayoutNatural
+	LayoutHorizontal
+	LayoutVertical
 )
 
 // GuiBuilder is an empty struct that allows convenient access to package functions.
@@ -90,18 +111,18 @@ type Options struct {
 	HAlign      gwu.HAlign
 	VAlign      gwu.VAlign
 	WhiteSpace  string
-	// To make borders, BorderWidth and BorderStyle are required.
+	// To actually see borders, BorderWidth and BorderStyle are required.
 	BorderWidth              int
 	BorderStyle, BorderColor string
 
-	Orientation       string // Orientation is used for panels and can be specified as Natural or Horizontal. Default orientation is vertical.
+	Layout            Layout // Layout is used for panels, tab panels, and tabbars and can be specified as Natural, Horizontal, or Vertical.
 	Multi             bool
 	Width, Height     string
 	FontSize          string
 	Color, Background string // Color is the 'foreground' color. For example, a label's text color is set using Color.
 	ColSpan           int
 	RowSpan           int
-	Enable            string
+	Enable            Enable
 	ReadOnly          bool
 }
 
@@ -110,9 +131,9 @@ func NewGuiBuilder() *GuiBuilder {
 	return &GuiBuilder{}
 }
 
-// MakeTable creates a gwu.Table and accepts the following options:
+// MakeTable creates a gwu.Table and uses the following options:
 //
-// Rows, Cols, CellPadding, HAlign, Valign, BorderWidth, BorderStyle, BorderColor, Width, Height, Color, Background
+// Rows, Cols, CellPadding, HAlign, Valign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background
 func (g *GuiBuilder) MakeTable(options Options) gwu.Table {
 	table := gwu.NewTable()
 
@@ -127,39 +148,71 @@ func (g *GuiBuilder) MakeTable(options Options) gwu.Table {
 		table.SetVAlign(options.VAlign)
 	}
 
-	table.Style().SetWhiteSpace(options.WhiteSpace)
-
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			table.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		table.Style().SetFullWidth()
-		table.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		table.Style().SetFullWidth()
-		table.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		table.Style().SetFullHeight()
-		table.Style().SetWidth(options.Width)
-	} else {
-		table.Style().SetSize(options.Width, options.Height)
-	}
-
-	table.Style().SetColor(options.Color)
-
-	table.Style().SetBackground(options.Background)
+	setStyle(table.Style(), options)
 
 	return table
 }
 
-// FormatTableCell formats the given, table, row, and column. The following options are accepted:
+func setStyle(style gwu.Style, options Options) {
+
+	style.SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
+
+	if options.Width == FullWidth {
+		style.SetFullWidth()
+	} else if options.Width != "" {
+		style.SetWidth(options.Width)
+	}
+
+	if options.Height == FullHeight {
+		style.SetFullHeight()
+	}
+	if options.Height != "" {
+		style.SetHeight(options.Height)
+	}
+
+	style.SetColor(options.Color)
+
+	style.SetBackground(options.Background)
+
+	style.SetWhiteSpace(options.WhiteSpace)
+
+	style.SetFontSize(options.FontSize)
+}
+
+func setEnabled(comp gwu.HasEnabled, enable Enable) {
+	switch enable {
+	case EnableTrue:
+		comp.SetEnabled(true)
+	case EnableFalse:
+		comp.SetEnabled(false)
+	}
+}
+
+func setTableView(tView gwu.TableView, options Options) {
+	tView.SetCellPadding(options.CellPadding)
+
+	if options.HAlign != "" {
+		tView.SetHAlign(options.HAlign)
+	}
+	if options.VAlign != "" {
+		tView.SetVAlign(options.VAlign)
+	}
+}
+
+func setLayout(pView gwu.PanelView, layout Layout) {
+	switch layout {
+	case LayoutNatural:
+		pView.SetLayout(gwu.LayoutNatural)
+	case LayoutHorizontal:
+		pView.SetLayout(gwu.LayoutHorizontal)
+	case LayoutVertical:
+		pView.SetLayout(gwu.LayoutVertical)
+	}
+}
+
+// FormatTableCell formats the given, table, row, and column and uses the following options:
 //
-// CellPadding, HAlign, VAlign, WhiteSpace, BorderWidth, BorderStyle, BorderColor, Width, Height, Color, Background, ColSpan
+// CellPadding, HAlign, VAlign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, ColSpan, RowSpan
 func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Options) {
 
 	padding := strconv.Itoa(options.CellPadding)
@@ -172,42 +225,18 @@ func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Opti
 		table.CellFmt(row, col).SetVAlign(options.VAlign)
 	}
 
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			table.CellFmt(row, col).Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		table.CellFmt(row, col).Style().SetFullWidth()
-		table.CellFmt(row, col).Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		table.CellFmt(row, col).Style().SetFullWidth()
-		table.CellFmt(row, col).Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		table.CellFmt(row, col).Style().SetFullHeight()
-		table.CellFmt(row, col).Style().SetWidth(options.Width)
-	} else {
-		table.CellFmt(row, col).Style().SetSize(options.Width, options.Height)
-	}
-
-	table.CellFmt(row, col).Style().SetColor(options.Color)
-
-	table.CellFmt(row, col).Style().SetBackground(options.Background)
-
 	table.SetColSpan(row, col, options.ColSpan)
-
 	table.SetRowSpan(row, col, options.RowSpan)
+
+	setStyle(table.CellFmt(row, col).Style(), options)
 
 }
 
 // MakeListBox takes in a slice of string values, adds them to a ListBox, and sets
 // the first value to the default displayed/selected. The following options are
-// accepted:
+// used:
 //
-// Rows, Multi, Width, Height, FontSize, Color, Background, Enable
+// Rows, Multi, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, Enable
 func (g *GuiBuilder) MakeListBox(values []string, options Options) gwu.ListBox {
 	lb := gwu.NewListBox(values)
 
@@ -221,38 +250,18 @@ func (g *GuiBuilder) MakeListBox(values []string, options Options) gwu.ListBox {
 		lb.SetSelected(0, true)
 	}
 
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		lb.Style().SetFullWidth()
-		lb.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		lb.Style().SetFullWidth()
-		lb.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		lb.Style().SetFullHeight()
-		lb.Style().SetWidth(options.Width)
-	} else {
-		lb.Style().SetSize(options.Width, options.Height)
-	}
+	setEnabled(lb, options.Enable)
 
-	lb.Style().SetFontSize(options.FontSize)
-
-	lb.Style().SetColor(options.Color)
-
-	lb.Style().SetBackground(options.Background)
-
-	if strings.EqualFold(options.Enable, "true") {
-		lb.SetEnabled(true)
-	}
-	if strings.EqualFold(options.Enable, "false") {
-		lb.SetEnabled(false)
-	}
+	setStyle(lb.Style(), options)
 
 	return lb
 }
 
-// MakeTextBox creates a text box with the given text. The following options are accepted:
+// MakeTextBox creates a text box with the given text.
+// Note that the WhiteSpace option is only enforced if Enable is set to false or if ReadOnly is set to True.
+// The following options are used:
 //
-// Rows, Cols, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, Enable, ReadOnly
+// Rows, Cols, WhiteSpace BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, Enable, ReadOnly.
 func (g *GuiBuilder) MakeTextBox(text string, options Options) gwu.TextBox {
 	tb := gwu.NewTextBox(text)
 	if options.Rows != 0 {
@@ -262,206 +271,70 @@ func (g *GuiBuilder) MakeTextBox(text string, options Options) gwu.TextBox {
 		tb.SetCols(options.Cols)
 	}
 
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			tb.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		tb.Style().SetFullWidth()
-		tb.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		tb.Style().SetFullWidth()
-		tb.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		tb.Style().SetFullHeight()
-		tb.Style().SetWidth(options.Width)
-	} else {
-		tb.Style().SetSize(options.Width, options.Height)
-	}
-
-	tb.Style().SetFontSize(options.FontSize)
-
-	tb.Style().SetColor(options.Color)
-
-	tb.Style().SetBackground(options.Background)
-
-	if strings.EqualFold(options.Enable, "true") {
-		tb.SetEnabled(true)
-	}
-	if strings.EqualFold(options.Enable, "false") {
-		tb.SetEnabled(false)
-	}
+	setEnabled(tb, options.Enable)
 
 	tb.SetReadOnly(options.ReadOnly)
+
+	setStyle(tb.Style(), options)
 
 	return tb
 }
 
-// MakeLabel creates a label with the given text. The following options are accepted:
+// MakeLabel creates a label with the given text and uses following options:
 //
 // WhiteSpace, BorderWidth, BorderStyle, BorderColor, FontSize, Color, Background
 func (g *GuiBuilder) MakeLabel(text string, options Options) gwu.Label {
 	label := gwu.NewLabel(text)
 
-	label.Style().SetWhiteSpace(options.WhiteSpace)
-
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			label.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprint(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	label.Style().SetFontSize(options.FontSize)
-
-	//Height and Width do nothing on labels, cannot implement
-
-	label.Style().SetColor(options.Color)
-
-	label.Style().SetBackground(options.Background)
+	setStyle(label.Style(), options)
 
 	return label
 }
 
-// MakeButton creates a button with the given text. The following options are accepted:
+// MakeButton creates a button with the given text and uses the following options:
 //
 // WhiteSpace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background
 func (g *GuiBuilder) MakeButton(text string, options Options) gwu.Button {
 	btn := gwu.NewButton(text)
 
-	btn.Style().SetWhiteSpace(options.WhiteSpace)
-
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			btn.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		btn.Style().SetFullWidth()
-		btn.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		btn.Style().SetFullWidth()
-		btn.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		btn.Style().SetFullHeight()
-		btn.Style().SetWidth(options.Width)
-	} else {
-		btn.Style().SetSize(options.Width, options.Height)
-	}
-
-	btn.Style().SetFontSize(options.FontSize)
-
-	btn.Style().SetColor(options.Color)
-
-	btn.Style().SetBackground(options.Background)
+	setStyle(btn.Style(), options)
 
 	return btn
 }
 
 // MakeWindow creates a windows with the window list name and specific window/URL extension. Full width is always set.
-// The following options are accepted:
+// The following options are used:
 //
 // CellPadding, HAlign, VAlign, BorderWidth, BorderStyle, BorderColor, WhiteSpace, Color, Background
 func (g *GuiBuilder) MakeWindow(name, extension string, options Options) gwu.Window {
 	win := gwu.NewWindow(name, extension)
 
-	win.SetCellPadding(options.CellPadding)
-
-	if options.HAlign != "" {
-		win.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		win.SetVAlign(options.VAlign)
-	}
-
-	if options.Width != "" || options.Height != "" {
-		win.Style().SetSize(options.Width, options.Height)
-	} else {
-		win.Style().SetFullWidth()
-	}
-
-	win.Style().SetWhiteSpace(options.WhiteSpace)
-
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			win.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	win.Style().SetColor(options.Color)
-
-	win.Style().SetBackground(options.Background)
+	setTableView(win, options)
+	setStyle(win.Style(), options)
 
 	return win
 }
 
-// MakePanel creates a gwu.Panel that is default veritcal orientation. The orientation paramter can also be specified as Natural or Horizontal. The following options are accepted:
+// MakePanel creates a gwu.Panel using the options.Layout parameter if specified. The following options are used:
 //
-// Orientation, CellPadding, HAlign, Valign, WhiteSpace, BorderStyle, BorderWidth, BorderColor, Width, Height, Color, Background
+// Layout, CellPadding, HAlign, Valign, WhiteSpace, BorderStyle, BorderWidth, BorderColor, Width, Height, Color, Background
 func (g *GuiBuilder) MakePanel(options Options) gwu.Panel {
-	var panel gwu.Panel
 
-	if strings.EqualFold(options.Orientation, "Natural") {
-		panel = gwu.NewNaturalPanel()
-	} else if strings.EqualFold(options.Orientation, "Horizontal") {
-		panel = gwu.NewHorizontalPanel()
-	} else {
-		panel = gwu.NewVerticalPanel()
-	}
+	panel := gwu.NewPanel()
+	setLayout(panel, options.Layout)
 
-	panel.SetCellPadding(options.CellPadding)
+	setTableView(panel, options)
 
-	if options.HAlign != "" {
-		panel.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		panel.SetVAlign(options.VAlign)
-	}
-
-	panel.Style().SetWhiteSpace(options.WhiteSpace)
-
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			panel.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		panel.Style().SetFullWidth()
-		panel.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		panel.Style().SetFullWidth()
-		panel.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		panel.Style().SetFullHeight()
-		panel.Style().SetWidth(options.Width)
-	} else {
-		panel.Style().SetSize(options.Width, options.Height)
-	}
-
-	panel.Style().SetColor(options.Color)
-
-	panel.Style().SetBackground(options.Background)
+	setStyle(panel.Style(), options)
 
 	return panel
 }
 
-// AddLabelsToPanel creates a new gwu.Label for each string, adding them in order to a gwu.Panel.
-func (g *GuiBuilder) AddLabelsToPanel(panel gwu.Panel, labels ...string) {
-	for _, label := range labels {
-		panel.Add(gwu.NewLabel(label))
+// AddLabelsToPanel creates a new gwu.Label with the given options for each labelText string, then adds them in order to a gwu.Panel.
+func (g *GuiBuilder) AddLabelsToPanel(panel gwu.Panel, options Options, labelText ...string) {
+	for _, text := range labelText {
+		label := g.MakeLabel(text, options)
+		panel.Add(label)
 	}
 }
 
@@ -479,46 +352,18 @@ func (g *GuiBuilder) SetEnabled(enable bool, comps ...gwu.HasEnabled) {
 	}
 }
 
-// MakeTabPanel creates a gwu.TanPanel that is default veritcal orientation. The orientation paramter can also be specified as Natural or Horizontal. The following options are accepted:
+// MakeTabPanel creates a gwu.TabPanel using the options.Layout parameter if specified. The following options are used:
 //
-// Orientation, CellPadding, HAlign, Valign, BorderStyle, BorderWidth, BorderColor, Width, Height, Color, Background
+// Layout, CellPadding, HAlign, Valign, WhiteSpace, BorderStyle, BorderWidth, BorderColor, Width, Height, Color, Background
 func (g *GuiBuilder) MakeTabPanel(options Options) gwu.TabPanel {
 
 	tabPanel := gwu.NewTabPanel()
 
-	tabPanel.SetCellPadding(options.CellPadding)
+	setLayout(tabPanel, options.Layout)
 
-	if options.HAlign != "" {
-		tabPanel.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		tabPanel.SetVAlign(options.VAlign)
-	}
+	setTableView(tabPanel, options)
 
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			tabPanel.Style().SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
-
-	if strings.EqualFold(options.Width, "Full") && strings.EqualFold(options.Height, "Full") {
-		tabPanel.Style().SetFullWidth()
-		tabPanel.Style().SetFullHeight()
-	} else if strings.EqualFold(options.Width, "Full") {
-		tabPanel.Style().SetFullWidth()
-		tabPanel.Style().SetHeight(options.Height)
-	} else if strings.EqualFold(options.Height, "Full") {
-		tabPanel.Style().SetFullHeight()
-		tabPanel.Style().SetWidth(options.Width)
-	} else {
-		tabPanel.Style().SetSize(options.Width, options.Height)
-	}
-
-	tabPanel.Style().SetColor(options.Color)
-
-	tabPanel.Style().SetBackground(options.Background)
+	setStyle(tabPanel.Style(), options)
 
 	return tabPanel
 }
