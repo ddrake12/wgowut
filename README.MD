@@ -54,7 +54,7 @@ func (gc *guiControl) makeBtnTable() gwu.Table {
 		// do something with these values
 	}, gwu.ETypeClick)
 
-	// make two more componenets
+	// make two more components
 
 	btnTable.Add(btn, 0, 0)
 	// add two more components in order to cells 0,1 and 0,2

@@ -69,8 +69,6 @@ components to window or top level table/panel in order and at the same time. Exa
 package wgowut
 
 import (
-	"fmt"
-	"os"
 	"strconv"
 
 	"github.com/icza/gowut/gwu"
@@ -113,7 +111,7 @@ type Options struct {
 	HAlign      gwu.HAlign
 	VAlign      gwu.VAlign
 	WhiteSpace  string
-	// To make borders, BorderWidth and BorderStyle are required.
+	// To actually see borders, BorderWidth and BorderStyle are required.
 	BorderWidth              int
 	BorderStyle, BorderColor string
 
@@ -157,13 +155,7 @@ func (g *GuiBuilder) MakeTable(options Options) gwu.Table {
 
 func setStyle(style gwu.Style, options Options) {
 
-	if options.BorderWidth != 0 || options.BorderStyle != "" || options.BorderColor != "" {
-		if options.BorderWidth != 0 && options.BorderStyle != "" {
-			style.SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
-		} else {
-			fmt.Fprintf(os.Stderr, "\nError: Setting a border requires style and width.\n")
-		}
-	}
+	style.SetBorder2(options.BorderWidth, options.BorderStyle, options.BorderColor)
 
 	if options.Width == FullWidth {
 		style.SetFullWidth()
@@ -175,7 +167,7 @@ func setStyle(style gwu.Style, options Options) {
 		style.SetFullHeight()
 	}
 	if options.Height != "" {
-		style.SetFullHeight()
+		style.SetHeight(options.Height)
 	}
 
 	style.SetColor(options.Color)
@@ -187,9 +179,41 @@ func setStyle(style gwu.Style, options Options) {
 	style.SetFontSize(options.FontSize)
 }
 
+func setEnabled(comp gwu.HasEnabled, enable Enable) {
+	switch enable {
+	case EnableTrue:
+		comp.SetEnabled(true)
+	case EnableFalse:
+		comp.SetEnabled(false)
+	}
+}
+
+func setTableView(tView gwu.TableView, options Options) {
+	tView.SetCellPadding(options.CellPadding)
+
+	if options.HAlign != "" {
+		tView.SetHAlign(options.HAlign)
+	}
+	if options.VAlign != "" {
+		tView.SetVAlign(options.VAlign)
+	}
+}
+
+func setLayout(pView gwu.PanelView, layout Layout) {
+	switch layout {
+	case LayoutNatural:
+		pView.SetLayout(gwu.LayoutNatural)
+	case LayoutHorizontal:
+		pView.SetLayout(gwu.LayoutHorizontal)
+	case LayoutVertical:
+		pView.SetLayout(gwu.LayoutVertical)
+	}
+}
+
 // FormatTableCell formats the given, table, row, and column and uses the following options:
 //
-// CellPadding, HAlign, VAlign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, CellSpan, RowSpan
+// CellPadding, HAlign, VAlign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, ColSpan, RowSpan
+
 func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Options) {
 
 	padding := strconv.Itoa(options.CellPadding)
@@ -203,7 +227,6 @@ func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Opti
 	}
 
 	table.SetColSpan(row, col, options.ColSpan)
-
 	table.SetRowSpan(row, col, options.RowSpan)
 
 	setStyle(table.CellFmt(row, col).Style(), options)
@@ -228,12 +251,9 @@ func (g *GuiBuilder) MakeListBox(values []string, options Options) gwu.ListBox {
 		lb.SetSelected(0, true)
 	}
 
-	switch options.Enable {
-	case EnableTrue:
-		lb.SetEnabled(true)
-	case EnableFalse:
-		lb.SetEnabled(false)
-	}
+	setEnabled(lb, options.Enable)
+
+	setStyle(lb.Style(), options)
 
 	setStyle(lb.Style(), options)
 
@@ -254,12 +274,7 @@ func (g *GuiBuilder) MakeTextBox(text string, options Options) gwu.TextBox {
 		tb.SetCols(options.Cols)
 	}
 
-	switch options.Enable {
-	case EnableTrue:
-		tb.SetEnabled(true)
-	case EnableFalse:
-		tb.SetEnabled(false)
-	}
+	setEnabled(tb, options.Enable)
 
 	tb.SetReadOnly(options.ReadOnly)
 
@@ -297,14 +312,7 @@ func (g *GuiBuilder) MakeButton(text string, options Options) gwu.Button {
 func (g *GuiBuilder) MakeWindow(name, extension string, options Options) gwu.Window {
 	win := gwu.NewWindow(name, extension)
 
-	win.SetCellPadding(options.CellPadding)
-
-	if options.HAlign != "" {
-		win.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		win.SetVAlign(options.VAlign)
-	}
+	setTableView(win, options)
 
 	setStyle(win.Style(), options)
 
@@ -315,27 +323,11 @@ func (g *GuiBuilder) MakeWindow(name, extension string, options Options) gwu.Win
 //
 // Layout, CellPadding, HAlign, Valign, WhiteSpace, BorderStyle, BorderWidth, BorderColor, Width, Height, Color, Background
 func (g *GuiBuilder) MakePanel(options Options) gwu.Panel {
-	var panel gwu.Panel
 
-	switch options.Layout {
-	case LayoutNatural:
-		panel = gwu.NewNaturalPanel()
-	case LayoutHorizontal:
-		panel = gwu.NewHorizontalPanel()
-	case LayoutVertical:
-		panel = gwu.NewVerticalPanel()
-	default:
-		panel = gwu.NewPanel()
-	}
+	panel := gwu.NewPanel()
+	setLayout(panel, options.Layout)
 
-	panel.SetCellPadding(options.CellPadding)
-
-	if options.HAlign != "" {
-		panel.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		panel.SetVAlign(options.VAlign)
-	}
+	setTableView(panel, options)
 
 	setStyle(panel.Style(), options)
 
@@ -371,23 +363,9 @@ func (g *GuiBuilder) MakeTabPanel(options Options) gwu.TabPanel {
 
 	tabPanel := gwu.NewTabPanel()
 
-	switch options.Layout {
-	case LayoutNatural:
-		tabPanel.SetLayout(gwu.LayoutNatural)
-	case LayoutHorizontal:
-		tabPanel.SetLayout(gwu.LayoutHorizontal)
-	case LayoutVertical:
-		tabPanel.SetLayout(gwu.LayoutVertical)
-	}
+	setLayout(tabPanel, options.Layout)
 
-	tabPanel.SetCellPadding(options.CellPadding)
-
-	if options.HAlign != "" {
-		tabPanel.SetHAlign(options.HAlign)
-	}
-	if options.VAlign != "" {
-		tabPanel.SetVAlign(options.VAlign)
-	}
+	setTableView(tabPanel, options)
 
 	setStyle(tabPanel.Style(), options)
 
