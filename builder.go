@@ -57,7 +57,8 @@ components to window or top level table/panel in order and at the same time. Exa
 		selectedVal := gc.importantLb.SelectedValue()
 		// do something with these values
  	}, gwu.ETypeClick)
- 	// make two more componenets
+ 	// make two more components
+
 
  	btnTable.Add(btn, 0, 0)
  	// add two more components in order to cells 0,1 and 0,2
@@ -83,7 +84,7 @@ const (
 type Enable int
 
 const (
-	EnableNil Enable = iota
+	EnableNil Enable = iota // Enable is used to set the Enable Option for gwu components that support it
 	EnableTrue
 	EnableFalse
 )
@@ -92,7 +93,7 @@ const (
 type Layout int
 
 const (
-	LayoutNil Layout = iota
+	LayoutNil Layout = iota // Layout is used to set the Layout Option for gwu components that support it
 	LayoutNatural
 	LayoutHorizontal
 	LayoutVertical
@@ -213,7 +214,6 @@ func setLayout(pView gwu.PanelView, layout Layout) {
 // FormatTableCell formats the given, table, row, and column and uses the following options:
 //
 // CellPadding, HAlign, VAlign, Whitespace, BorderWidth, BorderStyle, BorderColor, Width, Height, FontSize, Color, Background, ColSpan, RowSpan
-
 func (g *GuiBuilder) FormatTableCell(table gwu.Table, row, col int, options Options) {
 
 	padding := strconv.Itoa(options.CellPadding)
@@ -342,7 +342,7 @@ func (g *GuiBuilder) AddLabelsToPanel(panel gwu.Panel, options Options, labelTex
 	}
 }
 
-// AddsCompsToPanel adds a variable number of gwu.Comp interfaces to a gwu.Panel.
+// AddCompsToPanel adds a variable number of gwu.Comp interfaces to a gwu.Panel.
 func (g *GuiBuilder) AddCompsToPanel(panel gwu.Panel, comps ...gwu.Comp) {
 	for _, comp := range comps {
 		panel.Add(comp)

@@ -64,3 +64,5 @@ func (gc *guiControl) makeBtnTable() gwu.Table {
 ```
 
 ## Contributions Welcome! 
+
+This package is meant to be extended as needed to make GUI coding easier and faster. Please update the tests for any new options or methods and PR's will be checked/merged. 
