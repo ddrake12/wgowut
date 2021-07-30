@@ -2,7 +2,7 @@
 
 # Introduction 
 
-Wgowut (wrapped gowut) provides convenient wrapper functions around the package [gowut](github.com/icza/gowut). 
+Wgowut (wrapped gowut) provides convenient wrapper functions around the package [gowut](https://github.com/icza/gowut). 
 
 Initialize GUI components in one line by calling a make function and passing in a wgowut.Options struct with any needed options. 
 
